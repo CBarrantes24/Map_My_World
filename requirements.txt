@@ -5,3 +5,6 @@ fastapi==0.116.1
 #Testing
 httpx==0.28.1
 pytest==8.4.1
+
+#Database
+psycopg2-binary==2.9.10
