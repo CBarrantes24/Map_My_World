@@ -53,6 +53,37 @@ src/
    pytest
    ```
 
+4. **Database Create Table**
+    CREATE TABLE category (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        type VARCHAR(50),
+        description TEXT
+    );
+
+    CREATE TABLE locations (
+    id            SERIAL PRIMARY KEY,
+    name          VARCHAR(255)      NOT NULL,
+    latitude      DOUBLE PRECISION  NOT NULL,
+    longitude     DOUBLE PRECISION  NOT NULL,
+    description   TEXT              NOT NULL,
+    category_id   INTEGER           NOT NULL,
+    create_date   TIMESTAMP WITH TIME ZONE,
+    last_updated  TIMESTAMP WITH TIME ZONE,
+    FOREIGN KEY (category_id) REFERENCES category(id)
+    );
+
+
+    CREATE TABLE location_category_review (
+        id SERIAL PRIMARY KEY,
+        location_id INTEGER NOT NULL,
+        category_id INTEGER NOT NULL,
+        last_reviewed TIMESTAMP,
+        UNIQUE (location_id, category_id),
+        FOREIGN KEY (location_id) REFERENCES locations(id),
+        FOREIGN KEY (category_id) REFERENCES category(id)
+    );
+
 ## Main Endpoints
 - `/` : Health check
 - `/locations` : Location CRUD, recommendations, and category-combined endpoints
