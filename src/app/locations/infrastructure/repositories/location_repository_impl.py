@@ -3,53 +3,154 @@ from src.app.locations.domain.entities.location import Location
 from src.app.infrastructure.database.db_connection_factory import DatabaseConnectionFactory
 from src.app.locations.domain.value_object.name import Name
 from src.app.locations.domain.value_object.description import Description
+from src.app.locations.domain.entities.location_with_category import LocationWithCategory
+from src.app.category.domain.entities.category import Category
 from typing import List, Optional
 
 
 class LocationRepositoryImpl(LocationRepository):
+    def get_locations_with_category(self) -> list:
+        """Retrieve all locations with their category data."""
+        connection = DatabaseConnectionFactory.get_connection()
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    SELECT l.id, l.name, l.latitude, l.longitude, l.description,
+                           c.id, c.name, c.type, c.description
+                    FROM locations l
+                    JOIN category c ON l.category_id = c.id
+                """)
+                rows = cursor.fetchall()
+                print("rows:",rows) 
+                result = []
+                for row in rows:
+                    category = Category(id=row[5], name=row[6], type=row[7], description=row[8])
+                    location_with_category = LocationWithCategory(
+                        id=row[0],
+                        name=row[1],
+                        latitude=row[2],
+                        longitude=row[3],
+                        description=row[4],
+                        category=category
+                    )
+                    result.append(location_with_category)
+                return result
+        finally:
+            DatabaseConnectionFactory.realease_connection(connection)
 
     def get_location(self, location_id: int) -> Optional[Location]:
         """Retrieve a location by its ID."""
         connection = DatabaseConnectionFactory.get_connection()
         try:
-            pass
+              with connection.cursor() as cursor:
+                cursor.execute(
+                    "SELECT id, name, description, latitude, longitude, category_id FROM locations WHERE id = %s;", (location_id,))
+                row = cursor.fetchone()
+                if row:
+                    return Location(
+                        id=row[0],
+                        name=row[1],
+                        description=row[2],
+                        latitude=row[3],
+                        longitude=row[4],
+                        category_id=row[5]
+                    )
+                return None
+            
         finally:
-            DatabaseConnectionFactory.release_connection(connection)
+            DatabaseConnectionFactory.realease_connection(connection)
 
     def get_all_locations(self) -> List[Location]:
         """Retrieve all locations."""
         connection = DatabaseConnectionFactory.get_connection()
         try:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT id, name, description, longitude, latitude FROM locations")
+                cursor.execute("SELECT id, name, description, longitude, latitude, category_id FROM locations")
                 rows = cursor.fetchall()
                 return [Location(
                     id=row[0],
-                    name=Name(value=  row[1]),
-                    description=Description (value = row[2]),
+                    name=row[1],
+                    description=row[2],
                     longitude=row[3],
-                    latitude=row[4]
-                    ) for row in rows]
+                    latitude=row[4],
+                    category_id=row[5]
+                ) for row in rows]
         finally:
-            DatabaseConnectionFactory.release_connection(connection)
+            DatabaseConnectionFactory.realease_connection(connection)
        
 
-    def add_location(self, location: Location) -> None:
+    def add_location(self, location: Location) -> Location:
         """Add a new location."""
         connection = DatabaseConnectionFactory.get_connection()
         try:
-            pass
+            with connection.cursor() as cursor:
+                # Validar el nombre usando el Value Object antes de la inserción
+                # name_location = Name(value=location.name)
+                # description_location = Description(value=location.description)
+
+                cursor.execute(
+                    """
+                    INSERT INTO locations (name, latitude, longitude, description, category_id)
+                    VALUES (%s, %s, %s, %s, %s) RETURNING id;
+                    """,
+                    (
+                        location.name,
+                        location.latitude,
+                        location.longitude,
+                        location.description,
+                        location.category_id
+                    )
+                )
+                row = cursor.fetchone()
+                location_id = row[0]
+                connection.commit()
+                print(f"Location: {location}")
+                return Location(
+                    id=location_id,
+                    name=location.name,
+                    description=location.description,
+                    latitude=location.latitude,
+                    longitude=location.longitude,
+                    category_id=location.category_id
+                )
+                
+            print("Location added successfully")
+                 
         finally:
-            DatabaseConnectionFactory.release_connection(connection)
+            DatabaseConnectionFactory.realease_connection(connection)
 
 
-    def update_location(self, location: Location) -> None:
+    def update_location(self, location_id: int,location: Location) -> None:
         """Update an existing location."""
         connection = DatabaseConnectionFactory.get_connection()
         try:
-            pass
+            with connection.cursor() as cursor:
+                cursor.execute("""
+                    UPDATE locations
+                    SET name = %s, description = %s, latitude = %s, longitude = %s, category_id = %s
+                    WHERE id = %s RETURNING id, name, description, latitude, longitude, category_id;
+                """, (
+                    location.name,
+                    location.description,
+                    location.latitude,
+                    location.longitude,
+                    location.category_id,
+                    location_id
+                ))
+                connection.commit()
+                row = cursor.fetchone()
+                if row:
+                    return Location(
+                        id=row[0],
+                        name=row[1],
+                        description=row[2],
+                        latitude=row[3],
+                        longitude=row[4],
+                        category_id=row[5]
+                    )
+                return None
         finally:
-            DatabaseConnectionFactory.release_connection(connection)
+            DatabaseConnectionFactory.realease_connection(connection)
   
 
     def delete_location(self, location_id: int) -> None:
@@ -58,4 +159,4 @@ class LocationRepositoryImpl(LocationRepository):
         try:
             pass
         finally:
-            DatabaseConnectionFactory.release_connection(connection)
+            DatabaseConnectionFactory.realease_connection(connection)

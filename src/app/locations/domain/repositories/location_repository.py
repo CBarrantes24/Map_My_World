@@ -14,12 +14,12 @@ class LocationRepository(ABC):
         pass
 
     @abstractmethod
-    def add_location(self, location: Location) -> None:
+    def add_location(self, location: Location) -> Location:
         """Add a new location."""
         pass
 
     @abstractmethod
-    def update_location(self, location: Location) -> None:
+    def update_location(self, location_id: int, location: Location) -> Optional[Location]:
         """Update an existing location."""
         pass
 
@@ -27,3 +27,8 @@ class LocationRepository(ABC):
     def delete_location(self, location_id: int) -> None:
         """Delete a location by its ID."""
         pass
+
+    def get_locations_with_category(self, location_id: int) -> None:
+            """Delete a location by its ID."""
+            pass
+        

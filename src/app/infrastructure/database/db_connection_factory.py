@@ -10,11 +10,11 @@ class DatabaseConnectionFactory:
             cls._connection_pool = pool.SimpleConnectionPool(
                 minconn,
                 maxconn,
-                user='your_user',
-                password='your_password',
+                user='postgres',
+                password='abc123',
                 host='localhost',
                 port='5432',
-                database='your_database'
+                database='postgres'
             )
             
     @classmethod
