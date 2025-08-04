@@ -81,31 +81,33 @@ class CategoryRepositoryImpl(CategorynRepository):
             DatabaseConnectionFactory.realease_connection(connection)
 
 
-    def update_category(self, category_id: int,category: Category) -> None:
-        """Update an existing category."""
+    def update_category(self, category_id: int, category) -> None:
+        """Update an existing category, solo los campos enviados."""
         connection = DatabaseConnectionFactory.get_connection()
         try:
             with connection.cursor() as cursor:
-                cursor.execute("""
-                    UPDATE category
-                    SET name = %s, description = %s, type = %s, 
-                    WHERE id = %s RETURNING id, name, description, type;
-                """, (
-                    category.name,  # Value Object
-                    category.description,
-                    category.type,
-                    category_id # ID del category a actualizar
-                ))
-                # Confirmar la transacción
+                update_fields = []
+                values = []
+                if category.name is not None:
+                    update_fields.append("name = %s")
+                    values.append(category.name)
+                if category.description is not None:
+                    update_fields.append("description = %s")
+                    values.append(category.description)
+                if category.type is not None:
+                    update_fields.append("type = %s")
+                    values.append(category.type)
+                sql = f"UPDATE category SET {', '.join(update_fields)} WHERE id = %s RETURNING id, name, description, type;"
+                values.append(category_id)
+                cursor.execute(sql, tuple(values))
                 connection.commit()
-                
                 row = cursor.fetchone()
                 if row:
                     return Category(
                         id=row[0],
-                        name=row[1],  # Value Object
-                        description =row[2],
-                        type = row[3]
+                        name=row[1],
+                        description=row[2],
+                        type=row[3]
                     )
                 return None
         finally:
